@@ -51,7 +51,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ### Environment Variables
 
 | Variable | Description | Default |
-|---|---|---|
+| --- | --- | --- |
 | `NEXT_PUBLIC_AUTH_SERVER_URL` | URL of your Better Auth server | `http://localhost:3001` |
 
 ### Auth Server Setup
@@ -81,7 +81,7 @@ export const auth = betterAuth({
 
 ## Project Structure
 
-```
+```txt
 app/
   layout.tsx          # Root layout with fonts
   page.tsx            # Landing page

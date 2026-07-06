@@ -1,0 +1,15 @@
+{
+  // Run as `bunx markdownlint-cli2` (no args) — globs/ignores are picked up from here.
+  "globs": ["**/*.md"],
+  "ignores": [
+    "node_modules/**",
+    // CLAUDE.md is a one-line `@AGENTS.md` import (Next.js convention), not markdown prose.
+    "CLAUDE.md"
+  ],
+  "config": {
+    "default": true,
+    // This repo does not hard-wrap prose; the Next.js-managed block in AGENTS.md
+    // also exceeds 80 chars and must not be rewrapped.
+    "MD013": false
+  }
+}

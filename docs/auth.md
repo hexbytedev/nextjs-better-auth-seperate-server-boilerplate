@@ -34,7 +34,7 @@ const { session, user, isLoaded, isSignedIn, signOut } = useAuth();
 ```
 
 | Property | Type | Description |
-|---|---|---|
+| --- | --- | --- |
 | `session` | `Record<string, unknown> \| null` | Current session |
 | `user` | `Record<string, unknown> \| null` | Current user |
 | `isLoaded` | `boolean` | `true` once session check completes |
@@ -54,7 +54,7 @@ Navigates to `/sign-in`.
 ```
 
 | Prop | Type | Default |
-|---|---|---|
+| --- | --- | --- |
 | `redirectUrl` | `string` | `"/sign-in"` |
 | `children` | `ReactNode` | LogIn icon + "Sign In" |
 
@@ -76,7 +76,7 @@ Sign-in form with email/password, error handling, email verification flow.
 ```
 
 | Prop | Type | Default |
-|---|---|---|
+| --- | --- | --- |
 | `onSuccess` | `() => void` | `window.location.href = "/dashboard"` |
 | `showCardWrapper` | `boolean` | `true` |
 
@@ -148,7 +148,7 @@ const image = (user as { image?: string })?.image;
 
 ## File Structure
 
-```
+```txt
 components/auth/
   index.ts              Barrel export
   types.ts              TypeScript types
