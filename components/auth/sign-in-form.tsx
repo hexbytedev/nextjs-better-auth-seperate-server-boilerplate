@@ -140,7 +140,7 @@ export function SignInForm({ onSuccess, showCardWrapper = true }: SignInFormProp
 
     const { error: socialError } = await authClient.signIn.social({
       provider,
-      callbackURL: "/dashboard",
+      callbackURL: `${window.location.origin}/dashboard`,
     });
 
     if (socialError) {
