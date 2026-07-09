@@ -80,5 +80,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.set-tag.outputs.tags }}
+          build-args: |
+            NEXT_PUBLIC_AUTH_SERVER_URL=${{ secrets.NEXT_PUBLIC_AUTH_SERVER_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

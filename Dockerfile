@@ -38,6 +38,13 @@ ENV NODE_ENV=production
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Public Better Auth server URL. Being a NEXT_PUBLIC_ variable, it is inlined
+# into the client bundle at build time, so it must be present during `bun run
+# build`. Passed via --build-arg (see .github/workflows/build-and-push.yml,
+# sourced from the NEXT_PUBLIC_AUTH_SERVER_URL repository secret).
+ARG NEXT_PUBLIC_AUTH_SERVER_URL
+ENV NEXT_PUBLIC_AUTH_SERVER_URL=$NEXT_PUBLIC_AUTH_SERVER_URL
+
 # Build Next.js application
 RUN bun run build
 

@@ -68,7 +68,11 @@ Navigates to `/sign-up`. Same props as `SignInButton`. Uses `variant="outline"`.
 
 ### `<SignInForm>`
 
-Sign-in form with email/password, error handling, email verification flow.
+Email/password sign-in **plus passkey sign-in**, with typed error handling and an inline email-verification resend flow.
+
+- Renders a **Sign in with Passkey** button (WebAuthn) below the credentials form.
+- On mount, preloads passkeys for browser autofill via conditional UI (`signIn.passkey({ autoFill: true })`) when the browser supports it.
+- On an `EMAIL_NOT_VERIFIED` error, shows an inline `<VerificationPending>` panel (resend with a 60s cooldown).
 
 ```tsx
 <SignInForm />                                       {/* standalone with Card */}
@@ -82,11 +86,13 @@ Sign-in form with email/password, error handling, email verification flow.
 
 Error codes: `INVALID_EMAIL_OR_PASSWORD`, `EMAIL_NOT_VERIFIED`, `INVALID_EMAIL`, `FAILED_TO_CREATE_SESSION`, HTTP 429.
 
+> Passkey sign-in uses the `passkeyClient` plugin (configured in `lib/auth-client.ts`) and requires a Better Auth server with the passkey plugin enabled.
+
 ---
 
 ### `<SignUpForm>`
 
-Same props as `SignInForm`. Shows "Check your email" screen after signup.
+Same props as `SignInForm`. Collects first name, last name (combined into `name`), email, and password. After signup, shows a full-screen `<VerificationPending>` ("Check your email") screen when verification is required; otherwise runs `onSuccess`.
 
 Error codes: `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`, `INVALID_EMAIL`, `INVALID_PASSWORD`, `PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`, `FAILED_TO_CREATE_USER`, `FAILED_TO_CREATE_SESSION`, HTTP 429.
 
@@ -160,3 +166,5 @@ components/auth/
   user-button.tsx       Avatar + dropdown
   show.tsx              Conditional render
 ```
+
+Both forms also render `components/verification-pending.tsx` — the shared "check your email" panel with resend (60s cooldown), used inline (sign-in) or full-screen (sign-up).
