@@ -646,6 +646,7 @@ function TwoFactorSection() {
 
     const { data, error: enableError } = await authClient.twoFactor.enable({
       password,
+      issuer: "Hexbyte",
     });
 
     if (enableError) {

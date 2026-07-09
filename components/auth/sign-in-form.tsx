@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LogIn, Loader2, CircleAlert, Fingerprint } from "lucide-react";
+import { LogIn, Loader2, CircleAlert, Fingerprint, Shield } from "lucide-react";
 import { VerificationPending } from "@/components/verification-pending";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { SignInFormProps } from "./types";
@@ -67,6 +67,9 @@ export function SignInForm({ onSuccess, showCardWrapper = true }: SignInFormProp
   const [passkeyLoading, setPasskeyLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [showResend, setShowResend] = useState(false);
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
 
   // Preload passkeys for conditional UI (browser autofill)
   useEffect(() => {
@@ -85,7 +88,7 @@ export function SignInForm({ onSuccess, showCardWrapper = true }: SignInFormProp
     setLoading(true);
     setShowResend(false);
 
-    const { error: signInError } = await authClient.signIn.email(
+    const response = await authClient.signIn.email(
       { email, password },
       {
         onSuccess: () => {
@@ -102,11 +105,36 @@ export function SignInForm({ onSuccess, showCardWrapper = true }: SignInFormProp
       }
     );
 
-    if (signInError) {
-      setError(getErrorMessage(signInError));
-      setShowResend(isEmailNotVerified(signInError));
+    if (response.error) {
+      setError(getErrorMessage(response.error));
+      setShowResend(isEmailNotVerified(response.error));
+    } else if ((response.data as Record<string, unknown>)?.twoFactorRedirect) {
+      setTwoFactorRequired(true);
     }
     setLoading(false);
+  };
+
+  const handleTwoFactorVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setTwoFactorLoading(true);
+
+    const { error: totpError } = await authClient.twoFactor.verifyTotp({
+      code: twoFactorCode,
+      trustDevice: true,
+    });
+
+    if (totpError) {
+      setError(totpError.message ?? "Invalid code. Please try again.");
+      setTwoFactorLoading(false);
+      return;
+    }
+
+    if (onSuccess) {
+      onSuccess();
+    } else {
+      window.location.href = "/dashboard";
+    }
   };
 
   const handlePasskeySignIn = async () => {
@@ -150,7 +178,7 @@ export function SignInForm({ onSuccess, showCardWrapper = true }: SignInFormProp
   };
 
   const form = (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={twoFactorRequired ? handleTwoFactorVerify : handleSubmit} className="space-y-4">
         {error ? (
           <Alert variant="destructive" aria-live="polite">
             <CircleAlert />
@@ -158,103 +186,146 @@ export function SignInForm({ onSuccess, showCardWrapper = true }: SignInFormProp
           </Alert>
         ) : null}
 
-      <div className="grid grid-cols-2 gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => handleSocialSignIn("github")}
-          disabled={loading || passkeyLoading || socialLoading !== null}
-        >
-          {socialLoading === "github" ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <GitHubIcon className="mr-2 h-4 w-4" />
-          )}
-          GitHub
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => handleSocialSignIn("google")}
-          disabled={loading || passkeyLoading || socialLoading !== null}
-        >
-          {socialLoading === "google" ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <GoogleIcon className="mr-2 h-4 w-4" />
-          )}
-          Google
-        </Button>
-      </div>
+      {twoFactorRequired ? (
+        <>
+          <div className="rounded-lg border bg-muted/50 p-3 text-center">
+            <Shield className="mx-auto mb-1 h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <p className="text-sm font-medium">Two-Factor Authentication</p>
+            <p className="text-xs text-muted-foreground">
+              Enter the 6-digit code from your authenticator app.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="auth-2fa-code">Verification code</Label>
+            <Input
+              id="auth-2fa-code"
+              value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value)}
+              placeholder="000000"
+              maxLength={6}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={twoFactorLoading || twoFactorCode.length < 6}>
+            {twoFactorLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Shield className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            {twoFactorLoading ? "Verifying…" : "Verify"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => { setTwoFactorRequired(false); setTwoFactorCode(""); setError(""); }}
+          >
+            Back to sign in
+          </Button>
+        </>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleSocialSignIn("github")}
+              disabled={loading || passkeyLoading || socialLoading !== null}
+            >
+              {socialLoading === "github" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <GitHubIcon className="mr-2 h-4 w-4" />
+              )}
+              GitHub
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleSocialSignIn("google")}
+              disabled={loading || passkeyLoading || socialLoading !== null}
+            >
+              {socialLoading === "google" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <GoogleIcon className="mr-2 h-4 w-4" />
+              )}
+              Google
+            </Button>
+          </div>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">or</span>
-        </div>
-      </div>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="auth-sign-in-email">Email</Label>
-        <Input
-          id="auth-sign-in-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com…"
-          autoComplete="email webauthn"
-          spellCheck={false}
-          required
-        />
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="auth-sign-in-email">Email</Label>
+            <Input
+              id="auth-sign-in-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com…"
+              autoComplete="email webauthn"
+              spellCheck={false}
+              required
+            />
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="auth-sign-in-password">Password</Label>
-        <Input
-          id="auth-sign-in-password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password…"
-          autoComplete="current-password"
-          required
-        />
-      </div>
+          <div className="space-y-2">
+            <Label htmlFor="auth-sign-in-password">Password</Label>
+            <Input
+              id="auth-sign-in-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Your password…"
+              autoComplete="current-password"
+              required
+            />
+          </div>
 
-      <Button type="submit" className="w-full" disabled={loading || passkeyLoading || socialLoading !== null}>
-        {loading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-        ) : (
-          <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
-        )}
-        {loading ? "Signing in…" : "Sign In"}
-      </Button>
+          <Button type="submit" className="w-full" disabled={loading || passkeyLoading || socialLoading !== null}>
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <LogIn className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            {loading ? "Signing in…" : "Sign In"}
+          </Button>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">or</span>
-        </div>
-      </div>
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={handlePasskeySignIn}
-        disabled={loading || passkeyLoading || socialLoading !== null}
-      >
-        {passkeyLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-        ) : (
-          <Fingerprint className="mr-2 h-4 w-4" aria-hidden="true" />
-        )}
-        Sign in with Passkey
-      </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handlePasskeySignIn}
+            disabled={loading || passkeyLoading || socialLoading !== null}
+          >
+            {passkeyLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Fingerprint className="mr-2 h-4 w-4" aria-hidden="true" />
+            )}
+            Sign in with Passkey
+          </Button>
+        </>
+      )}
     </form>
   );
 
