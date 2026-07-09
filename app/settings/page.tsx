@@ -37,6 +37,7 @@ import {
 import { Show } from "@/components/auth/show";
 import { useAuth } from "@/components/auth/auth-provider";
 import QRCode from "qrcode";
+import { getAuthenticatorName } from "@better-auth/passkey";
 
 interface Session {
   token: string;
@@ -455,6 +456,7 @@ function ConnectedAccountsSection() {
 interface Passkey {
   id: string;
   name: string;
+  aaguid: string | null;
   createdAt: string;
 }
 
@@ -488,9 +490,7 @@ function PasskeySection() {
     setError("");
     setSuccess("");
 
-    const { error: regError } = await authClient.passkey.addPasskey({
-      name: "Passkey",
-    });
+    const { error: regError } = await authClient.passkey.addPasskey({});
 
     if (regError) {
       setError(regError.message ?? "Failed to register passkey.");
@@ -555,7 +555,9 @@ function PasskeySection() {
                 className="flex items-center justify-between rounded-lg border p-3"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{passkey.name}</p>
+                  <p className="text-sm font-medium truncate">
+                    {passkey.name || getAuthenticatorName(passkey.aaguid) || "Passkey"}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     Added {formatDate(passkey.createdAt)}
                   </p>
@@ -565,7 +567,7 @@ function PasskeySection() {
                   size="sm"
                   onClick={() => handleDelete(passkey.id)}
                   disabled={deleting === passkey.id}
-                  aria-label={`Delete passkey ${passkey.name}`}
+                  aria-label={`Delete passkey ${passkey.name || getAuthenticatorName(passkey.aaguid) || "Passkey"}`}
                 >
                   {deleting === passkey.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
