@@ -13,11 +13,25 @@ import {
 } from "@/components/ui/card";
 import { CheckCircle, CircleAlert, ArrowRight, RefreshCw } from "lucide-react";
 
+const ERROR_MESSAGES: Record<string, string> = {
+  INVALID_TOKEN: "This verification link is invalid. Please request a new one.",
+  TOKEN_EXPIRED:
+    "This verification link has expired. Please request a new one.",
+  USER_NOT_FOUND:
+    "Account not found. The account may have been deleted.",
+  INVALID_USER:
+    "Verification failed. Please try signing in and resend the verification email.",
+};
+
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
 
-  const isError = error === "INVALID_TOKEN" || error === "invalid_token";
+  const isError = Boolean(error);
+  const errorMessage = error
+    ? ERROR_MESSAGES[error] ??
+      "Something went wrong. Please try again."
+    : "";
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -35,26 +49,26 @@ function VerifyEmailContent() {
           </CardTitle>
           <CardDescription>
             {isError
-              ? "This verification link is invalid or has expired. Please request a new one."
+              ? errorMessage
               : "Your email has been successfully verified. You can now sign in to your account."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isError ? (
-            <Link href="/sign-in">
-              <Button variant="outline" className="w-full">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Go to Sign In &amp; Resend
-              </Button>
-            </Link>
-          ) : (
-            <Link href="/sign-in">
-              <Button className="w-full">
-                Go to Sign In
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          )}
+          <Link href="/sign-in">
+            <Button variant={isError ? "outline" : "default"} className="w-full">
+              {isError ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Go to Sign In
+                </>
+              ) : (
+                <>
+                  Go to Sign In
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </Link>
         </CardContent>
       </Card>
     </div>
